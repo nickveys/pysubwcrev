@@ -66,9 +66,22 @@ def process(inFile, outFile, info):
         tmp = re.sub(r'\$WCNOW\$', str(info['wcnow']), tmp)
         tmp = re.sub(r'\$WCRANGE\$', str(info['wcrange']), tmp)
         tmp = re.sub(r'\$WCREV\$', str(info['wcrev']), tmp)
-        tmp = re.sub(r'\$WCMODS.*\$', str(info['wcmods']), tmp)
-        tmp = re.sub(r'\$WCMIXED.*\$', str(info['wcmixed']), tmp)
         tmp = re.sub(r'\$WCURL\$', str(info['wcurl']), tmp)
+
+        match = re.search(r'\$WCMODS\?(.*):(.*)\$', tmp)
+        if match:
+            idx = 1
+            if not info['wcmods']:
+                idx = 2
+            tmp = re.sub(r'\$WCMODS.*\$', match.group(idx), tmp)
+
+        match = re.search(r'\$WCMIXED\?(.*):(.*)\$', tmp)
+        if match:
+            idx = 1
+            if not info['wcmixed']:
+                idx = 2
+            tmp = re.sub(r'\$WCMIXED.*\$', match.group(idx), tmp)
+
         fout.write(tmp)
 
     fin.close()
@@ -123,6 +136,7 @@ if __name__ == "__main__":
             opts += 'e'
 
     repoInfo = gather(workingCopyDir)
+    print repoInfo
 
     if shouldProcess:
         process(srcFile, destFile, repoInfo)
