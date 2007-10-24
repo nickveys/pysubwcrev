@@ -1,6 +1,6 @@
 from optparse import OptionParser
 from time import strftime, gmtime
-import pysvn, os, sys
+import os, pysvn, re, sys
 
 def gather(workingCopyDir):
     #debug
@@ -46,16 +46,33 @@ def gather(workingCopyDir):
     #print wcurl
     
     results = {}
-    results['wcrev'] = wcrev
-    results['wcdate'] = wcdate
-    results['wcnow'] = wcnow
+    results['wcdate']  = wcdate
+    results['wcnow']   = wcnow
     results['wcrange'] = wcrange
+    results['wcrev']   = wcrev
     results['wcmixed'] = wcmixed
-    results['wcmods'] = wcmods
-    results['wcurl'] = wcurl
+    results['wcmods']  = wcmods
+    results['wcurl']   = wcurl
 
-    print results
+    #print results
     return results
+
+def process(inFile, outFile, info):
+    
+    fin = open(inFile, 'r')
+    fout = open(outFile, 'w')
+    for line in fin:
+        tmp = re.sub(r'\$WCDATE\$', str(info['wcdate']), line)
+        tmp = re.sub(r'\$WCNOW\$', str(info['wcnow']), tmp)
+        tmp = re.sub(r'\$WCRANGE\$', str(info['wcrange']), tmp)
+        tmp = re.sub(r'\$WCREV\$', str(info['wcrev']), tmp)
+        tmp = re.sub(r'\$WCMODS.*\$', str(info['wcmods']), tmp)
+        tmp = re.sub(r'\$WCMIXED.*\$', str(info['wcmixed']), tmp)
+        tmp = re.sub(r'\$WCURL\$', str(info['wcurl']), tmp)
+        fout.write(tmp)
+
+    fin.close()
+    fout.close()
 
 if __name__ == "__main__":
     usage = """usage: pysubwcrev workingCopyPath [SrcVersionFile DestVersionFile] [-nmdfe]
@@ -69,6 +86,8 @@ if __name__ == "__main__":
     destFile = ''
     opts = []
     
+    shouldProcess = False
+    
     if len(sys.argv) == 3: # just path and args
         if sys.argv[2].find('n') > 0:
             opts += 'n'
@@ -81,11 +100,17 @@ if __name__ == "__main__":
         if sys.argv[2].find('e') > 0:
             opts += 'e'
     elif len(sys.argv) == 4: # just files
-        srcFile = sys.argv[2]
-        destFile = sys.argv[3]
+        srcFile = os.path.abspath(sys.argv[2].strip())
+        if not os.path.exists(srcFile):
+            sys.exit(usage)
+        destFile = os.path.abspath(sys.argv[3].strip())
+        shouldProcess = True
     elif len(sys.argv) == 5: # files and args
-        srcFile = sys.argv[2]
-        destFile = sys.argv[3]
+        srcFile = os.path.abspath(sys.argv[2].strip())
+        if not os.path.exists(srcFile):
+            sys.exit(usage)
+        destFile = os.path.abspath(sys.argv[3].strip())
+        shouldProcess = True
         if sys.argv[2].find('n') > 0:
             opts += 'n'
         if sys.argv[2].find('m') > 0:
@@ -97,5 +122,7 @@ if __name__ == "__main__":
         if sys.argv[2].find('e') > 0:
             opts += 'e'
 
-    gather(workingCopyDir)
-    print opts
+    repoInfo = gather(workingCopyDir)
+
+    if shouldProcess:
+        process(srcFile, destFile, repoInfo)
