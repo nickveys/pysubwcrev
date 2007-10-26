@@ -28,7 +28,7 @@ def gather(workingCopyDir, opts):
 
     maxdate = 0
     maxrev = 0
-    minrev = sys.maxint
+    minrev = 0
     hasMods = False
 
     # ignore externals if e isn't a given option
@@ -45,7 +45,7 @@ def gather(workingCopyDir, opts):
                 continue;
             if stat.entry.revision.number > maxrev:
                 maxrev = stat.entry.revision.number
-            if stat.entry.revision.number < minrev:
+            if stat.entry.revision.number < minrev or 0 == minrev:
                 minrev = stat.entry.revision.number
             if stat.entry.commit_time > maxdate:
                 maxdate = stat.entry.commit_time
