@@ -2,7 +2,7 @@ from optparse import OptionParser
 from time import strftime, gmtime
 import os, pysvn, re, sys
 
-def gather(workingCopyDir):
+def gather(workingCopyDir, opts):
     #debug
     #print "workingCopyDir: " + workingCopyDir
 
@@ -11,11 +11,21 @@ def gather(workingCopyDir):
 
     maxdate = 0
     maxrev = 0
-    minrev = 9999999
-    wcmods = False
+    minrev = sys.maxint
+    hasMods = False
 
-    for stat in client.status(workingCopyDir):
+    # ignore externals if e isn't a given option
+    ignoreExt = 'e' not in opts
+
+    for stat in client.status(workingCopyDir, ignore_externals=ignoreExt):
+        # skip externals if desired
+        if stat.text_status == pysvn.wc_status_kind.external and ignoreExt:
+            continue;
+
         if stat.entry:
+            # skip directories if not specified
+            if stat.entry.kind == pysvn.node_kind.dir and 'f' not in opts:
+                continue;
             if stat.entry.revision.number > maxrev:
                 maxrev = stat.entry.revision.number
             if stat.entry.revision.number < minrev:
@@ -23,42 +33,34 @@ def gather(workingCopyDir):
             if stat.entry.commit_time > maxdate:
                 maxdate = stat.entry.commit_time
             if stat.text_status == pysvn.wc_status_kind.modified:
-                wcmods = True
+                hasMods = True
             if stat.prop_status == pysvn.wc_status_kind.modified:
-                wcmods = True
+                hasMods = True
 
-    wcrev = maxrev
-    wcdate = strftime("%Y-%m-%d %H:%M:%S", gmtime(maxdate))
-    wcnow = strftime("%Y-%m-%d %H:%M:%S")
     wcrange = "%s:%s" % (minrev, maxrev)
-    wcmixed = True
+    isMixed = True
     if minrev == maxrev:
-        wcrange = "%s" % (wcrev)
-        wcmixed = False
-    wcurl = client.info(workingCopyDir).url
+        wcrange = "%s" % (maxrev)
+        isMixed = False
 
-    #print wcrev
-    #print wcdate
-    #print wcnow
-    #print wcrange
-    #print wcmixed
-    #print wcmods
-    #print wcurl
-    
     results = {}
-    results['wcdate']  = wcdate
-    results['wcnow']   = wcnow
     results['wcrange'] = wcrange
-    results['wcrev']   = wcrev
-    results['wcmixed'] = wcmixed
-    results['wcmods']  = wcmods
-    results['wcurl']   = wcurl
+    results['wcmixed'] = isMixed
+    results['wcmods']  = hasMods
+    results['wcrev']   = maxrev
+    results['wcurl']   = client.info(workingCopyDir).url
+    results['wcdate']  = strftime("%Y-%m-%d %H:%M:%S", gmtime(maxdate))
+    results['wcnow']   = strftime("%Y-%m-%d %H:%M:%S")
 
     #print results
     return results
 
-def process(inFile, outFile, info):
-    
+def process(inFile, outFile, info, opts):
+
+    # if wanted, exit if the out file exists
+    if 'd' in opts and os.path.exists(outFile):
+        sys.exit(9)
+
     fin = open(inFile, 'r')
     fout = open(outFile, 'w')
     for line in fin:
@@ -124,19 +126,24 @@ if __name__ == "__main__":
             sys.exit(usage)
         destFile = os.path.abspath(sys.argv[3].strip())
         shouldProcess = True
-        if sys.argv[2].find('n') > 0:
+        if sys.argv[4].find('n') > 0:
             opts += 'n'
-        if sys.argv[2].find('m') > 0:
+        if sys.argv[4].find('m') > 0:
             opts += 'm'
-        if sys.argv[2].find('d') > 0:
+        if sys.argv[4].find('d') > 0:
             opts += 'd'
-        if sys.argv[2].find('f') > 0:
+        if sys.argv[4].find('f') > 0:
             opts += 'f'
-        if sys.argv[2].find('e') > 0:
+        if sys.argv[4].find('e') > 0:
             opts += 'e'
 
-    repoInfo = gather(workingCopyDir)
+    repoInfo = gather(workingCopyDir, opts)
     print repoInfo
 
+    if 'n' in opts and repoInfo['wcmods']:
+        sys.exit(7)
+    elif 'm' in opts and repoInfo['wcmixed']:
+        sys.exit(8)
+
     if shouldProcess:
-        process(srcFile, destFile, repoInfo)
+        process(srcFile, destFile, repoInfo, opts)
