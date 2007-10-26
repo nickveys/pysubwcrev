@@ -50,7 +50,7 @@ def gather(workingCopyDir, opts):
     results['wcrev']   = maxrev
     results['wcurl']   = client.info(workingCopyDir).url
     results['wcdate']  = strftime("%Y-%m-%d %H:%M:%S", gmtime(maxdate))
-    results['wcnow']   = strftime("%Y-%m-%d %H:%M:%S")
+    results['wcnow']   = strftime("%Y-%m-%d %H:%M:%S", gmtime())
 
     #print results
     return results
