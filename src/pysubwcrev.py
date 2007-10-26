@@ -54,6 +54,8 @@ def gather(workingCopyDir, opts):
             if stat.prop_status == pysvn.wc_status_kind.modified:
                 hasMods = True
 
+    # TODO must be a better, pythonic way to do this...
+    # assume mixed, w/range, fix if needed
     wcrange = "%s:%s" % (minrev, maxrev)
     isMixed = True
     if minrev == maxrev:
