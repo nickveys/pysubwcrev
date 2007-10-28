@@ -18,7 +18,6 @@
 from optparse import OptionParser
 from time import strftime, gmtime
 import os, pysvn, re, sys
-
 def gather(workingCopyDir, opts):
     #debug
     #print "workingCopyDir: " + workingCopyDir
@@ -122,7 +121,7 @@ if __name__ == "__main__":
     opts = []
     
     shouldProcess = False
-    
+  
     if len(sys.argv) == 3: # just path and args
         if sys.argv[2].find('n') > 0:
             opts += 'n'
