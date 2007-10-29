@@ -143,13 +143,13 @@ if __name__ == "__main__":
     elif len(sys.argv) == 4: # just files
         srcFile = os.path.abspath(sys.argv[2].strip())
         if not os.path.exists(srcFile):
-            sys.exit(usage)
+            sys.exit('Source file not found')
         destFile = os.path.abspath(sys.argv[3].strip())
         shouldProcess = True
     elif len(sys.argv) == 5: # files and args
         srcFile = os.path.abspath(sys.argv[2].strip())
         if not os.path.exists(srcFile):
-            sys.exit(usage)
+            sys.exit('Source file not found')
         destFile = os.path.abspath(sys.argv[3].strip())
         shouldProcess = True
         opts = doArgs(sys.argv[4])
