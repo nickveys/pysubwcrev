@@ -18,9 +18,13 @@
 from optparse import OptionParser
 from time import strftime, gmtime
 import os, pysvn, re, sys
+
 def gather(workingCopyDir, opts):
     #debug
     #print "workingCopyDir: " + workingCopyDir
+
+    if not os.path.exists(workingCopyDir):
+        sys.exit("Working copy directory does not exist");
 
     client = pysvn.Client()
     #print client.info(workingCopyDir).url
@@ -33,25 +37,28 @@ def gather(workingCopyDir, opts):
     # ignore externals if e isn't a given option
     ignoreExt = 'e' not in opts
 
-    for stat in client.status(workingCopyDir, ignore_externals=ignoreExt):
-        # skip externals if desired
-        if stat.text_status == pysvn.wc_status_kind.external and ignoreExt:
-            continue;
-
-        if stat.entry:
-            # skip directories if not specified
-            if stat.entry.kind == pysvn.node_kind.dir and 'f' not in opts:
+    try:
+        for stat in client.status(workingCopyDir, ignore_externals=ignoreExt):
+            # skip externals if desired
+            if stat.text_status == pysvn.wc_status_kind.external and ignoreExt:
                 continue;
-            if stat.entry.revision.number > maxrev:
-                maxrev = stat.entry.revision.number
-            if stat.entry.revision.number < minrev or 0 == minrev:
-                minrev = stat.entry.revision.number
-            if stat.entry.commit_time > maxdate:
-                maxdate = stat.entry.commit_time
-            if stat.text_status == pysvn.wc_status_kind.modified:
-                hasMods = True
-            if stat.prop_status == pysvn.wc_status_kind.modified:
-                hasMods = True
+    
+            if stat.entry:
+                # skip directories if not specified
+                if stat.entry.kind == pysvn.node_kind.dir and 'f' not in opts:
+                    continue;
+                if stat.entry.revision.number > maxrev:
+                    maxrev = stat.entry.revision.number
+                if stat.entry.revision.number < minrev or 0 == minrev:
+                    minrev = stat.entry.revision.number
+                if stat.entry.commit_time > maxdate:
+                    maxdate = stat.entry.commit_time
+                if stat.text_status == pysvn.wc_status_kind.modified or \
+                    stat.prop_status == pysvn.wc_status_kind.modified:
+                    hasMods = True
+    except pysvn.ClientError:
+        print "Working copy directory is not a svn directory"
+        sys.exit(1)
 
     # TODO must be a better, pythonic way to do this...
     # assume mixed, w/range, fix if needed
@@ -108,6 +115,15 @@ def process(inFile, outFile, info, opts):
     fin.close()
     fout.close()
 
+def doArgs(argstring):
+    opts = []
+    if argstring.find('n') > 0: opts += 'n'
+    if argstring.find('m') > 0: opts += 'm'
+    if argstring.find('d') > 0: opts += 'd'
+    if argstring.find('f') > 0: opts += 'f'
+    if argstring.find('e') > 0: opts += 'e'
+    return opts
+
 if __name__ == "__main__":
     usage = """usage: pysubwcrev workingCopyPath [SrcVersionFile DestVersionFile] [-nmdfe]
 """
@@ -116,23 +132,14 @@ if __name__ == "__main__":
         sys.exit(usage)
 
     workingCopyDir = os.path.abspath(sys.argv[1].strip())
-    srcFile = ''
-    destFile = ''
-    opts = []
     
     shouldProcess = False
-  
+    destFile = ''
+    srcFile = ''
+    opts = []
+
     if len(sys.argv) == 3: # just path and args
-        if sys.argv[2].find('n') > 0:
-            opts += 'n'
-        if sys.argv[2].find('m') > 0:
-            opts += 'm'
-        if sys.argv[2].find('d') > 0:
-            opts += 'd'
-        if sys.argv[2].find('f') > 0:
-            opts += 'f'
-        if sys.argv[2].find('e') > 0:
-            opts += 'e'
+        opts = doArgs(sys.argv[2])
     elif len(sys.argv) == 4: # just files
         srcFile = os.path.abspath(sys.argv[2].strip())
         if not os.path.exists(srcFile):
@@ -145,19 +152,12 @@ if __name__ == "__main__":
             sys.exit(usage)
         destFile = os.path.abspath(sys.argv[3].strip())
         shouldProcess = True
-        if sys.argv[4].find('n') > 0:
-            opts += 'n'
-        if sys.argv[4].find('m') > 0:
-            opts += 'm'
-        if sys.argv[4].find('d') > 0:
-            opts += 'd'
-        if sys.argv[4].find('f') > 0:
-            opts += 'f'
-        if sys.argv[4].find('e') > 0:
-            opts += 'e'
+        opts = doArgs(sys.argv[4])
+
+    #print opts
 
     repoInfo = gather(workingCopyDir, opts)
-    print repoInfo
+    #print repoInfo
 
     if 'n' in opts and repoInfo['wcmods']:
         sys.exit(7)
