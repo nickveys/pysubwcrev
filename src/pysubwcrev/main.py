@@ -15,13 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with pysubwcrev.  If not, see <http://www.gnu.org/licenses/>.
 
-from optparse import OptionParser
 from time import strftime, gmtime
 import os, pysvn, re, sys
 
 def gather(workingCopyDir, opts):
-    #debug
-    #print "workingCopyDir: " + workingCopyDir
 
     if not os.path.exists(workingCopyDir):
         sys.exit("Working copy directory does not exist");
@@ -60,7 +57,6 @@ def gather(workingCopyDir, opts):
         print "Working copy directory is not a svn directory"
         sys.exit(1)
 
-    # TODO must be a better, pythonic way to do this...
     # assume mixed, w/range, fix if needed
     wcrange = "%s:%s" % (minrev, maxrev)
     isMixed = True
@@ -78,7 +74,6 @@ def gather(workingCopyDir, opts):
         'wcnow'   : strftime("%Y-%m-%d %H:%M:%S", gmtime())
     }
 
-    #print results
     return results
 
 def process(inFile, outFile, info, opts):
@@ -116,13 +111,7 @@ def process(inFile, outFile, info, opts):
     fout.close()
 
 def doArgs(argstring):
-    opts = []
-    if argstring.find('n') > 0: opts += 'n'
-    if argstring.find('m') > 0: opts += 'm'
-    if argstring.find('d') > 0: opts += 'd'
-    if argstring.find('f') > 0: opts += 'f'
-    if argstring.find('e') > 0: opts += 'e'
-    return opts
+    return [c for c in ['n', 'm', 'd', 'f', 'e'] if argstring.find(c) > 0]
 
 if __name__ == "__main__":
     usage = """usage: pysubwcrev workingCopyPath [SrcVersionFile DestVersionFile] [-nmdfe]
