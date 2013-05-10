@@ -64,7 +64,7 @@ def gather(workingCopyDir, opts):
         wcrange = "%s" % (maxrev)
         isMixed = False
 
-    svnInfo = client.info(workingCopyDir)
+    svnEntry  = client.info(workingCopyDir)
 
     results = {
         '_maxdate': maxdate,
@@ -72,7 +72,7 @@ def gather(workingCopyDir, opts):
         'wcmixed' : isMixed,
         'wcmods'  : hasMods,
         'wcrev'   : maxrev,
-        'wcurl'   : "" if svnInfo == None else svnInfo.url,
+        'wcurl'   : "" if svnEntry == None else svnEntry.url,
         'wcdate'  : strftime("%Y/%m/%d %H:%M:%S", localtime(maxdate)),
         'wcnow'   : strftime("%Y/%m/%d %H:%M:%S", localtime()),
         'wcdateutc'  : strftime("%Y/%m/%d %H:%M:%S", gmtime(maxdate)),
@@ -146,6 +146,9 @@ if __name__ == "__main__":
         sys.exit(usage)
 
     workingCopyDir = os.path.abspath(sys.argv[1].strip())
+
+    #pysvn issue: http://tigris-scm.10930.n7.nabble.com/Bug-with-status-on-a-file-if-path-uses-as-separator-td78156.html
+    workingCopyDir = workingCopyDir.replace("\\","/")
     
     shouldProcess = False
     destFile = ''
