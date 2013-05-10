@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with pysubwcrev.  If not, see <http://www.gnu.org/licenses/>.
 
-from time import strftime, gmtime
+from time import strftime, gmtime, localtime
 import os, pysvn, re, sys
 
 def gather(workingCopyDir, opts):
@@ -23,13 +23,22 @@ def gather(workingCopyDir, opts):
     if not os.path.exists(workingCopyDir):
         sys.exit("Working copy directory does not exist");
 
+    isSingleFile = os.path.isfile(workingCopyDir)
+
     client = pysvn.Client()
-    #print client.info(workingCopyDir).url
+    svnEntry  = client.info(workingCopyDir)
 
     maxdate = 0
     maxrev = 0
     minrev = 0
     hasMods = False
+    inSvn = True
+    needslock = False
+    filerev = -1
+    islocked = False
+    lockeddata = 0
+    lockowner = ""
+    lockcomment = ""
 
     # ignore externals if e isn't a given option
     ignoreExt = 'e' not in opts
@@ -53,9 +62,31 @@ def gather(workingCopyDir, opts):
                 if stat.text_status == pysvn.wc_status_kind.modified or \
                     stat.prop_status == pysvn.wc_status_kind.modified:
                     hasMods = True
+
+                if isSingleFile:
+                    prop_list = client.proplist(stat.entry.url)
+                    if len(prop_list) > 0 and len(prop_list[0]) > 1 and prop_list[0][1].has_key("svn:needs-lock"):
+                        needslock = True
+
+                    #TODO: I am not very sure about the different between entry revision and file revisions
+                    #This code get same result with SubWCRev.exe in my test
+                    #No api to get 'current' file revision, just the 1st one lower then current entry revision
+                    logs = client.log(stat.entry.url,revision_start=pysvn.Revision( pysvn.opt_revision_kind.number, minrev),limit=1)
+                    if len(logs) > 0:
+                        filerev = logs[0].revision.number
+
+                    entry_list = client.info2(stat.entry.url)
+                    if len(entry_list) > 0 \
+                            and len(entry_list[0]) > 1 \
+                            and entry_list[0][1].has_key("lock") \
+                            and entry_list[0][1].lock != None:                            
+                        islocked = True
+                        lockeddata = entry_list[0][1].lock.creation_date
+                        lockowner = entry_list[0][1].lock.owner
+                        lockcomment = entry_list[0][1].lock.comment
+
     except pysvn.ClientError:
-        print "Working copy directory is not a svn directory"
-        sys.exit(1)
+        inSvn = False
 
     # assume mixed, w/range, fix if needed
     wcrange = "%s:%s" % (minrev, maxrev)
@@ -65,16 +96,47 @@ def gather(workingCopyDir, opts):
         isMixed = False
 
     results = {
+        '_wcmaxdate': maxdate,
         'wcrange' : wcrange,
         'wcmixed' : isMixed,
         'wcmods'  : hasMods,
-        'wcrev'   : maxrev,
-        'wcurl'   : client.info(workingCopyDir).url,
-        'wcdate'  : strftime("%Y-%m-%d %H:%M:%S", gmtime(maxdate)),
-        'wcnow'   : strftime("%Y-%m-%d %H:%M:%S", gmtime())
+        'wcrev'   : filerev if filerev>0 else maxrev,
+        'wcurl'   : "" if svnEntry == None else svnEntry.url,
+        'wcdate'  : strftime("%Y/%m/%d %H:%M:%S", localtime(maxdate)),
+        'wcnow'   : strftime("%Y/%m/%d %H:%M:%S", localtime()),
+        'wcdateutc'     : strftime("%Y/%m/%d %H:%M:%S", gmtime(maxdate)),
+        'wcnowutc'      : strftime("%Y/%m/%d %H:%M:%S", gmtime()),
+        'wcinsvn'       : inSvn,
+        'wcneedslock'   : needslock,
+        '_wclockdate'   : lockeddata,
+        'wcislocked'    : islocked,
+        'wclockdate'    : strftime("%Y/%m/%d %H:%M:%S", localtime(lockeddata)),
+        'wclockdateutc' : strftime("%Y/%m/%d %H:%M:%S", gmtime(lockeddata)),
+        'wclockowner'   : lockowner,
+        'wclockcomment' : lockcomment,
     }
 
     return results
+
+def boolean_process(inline,replacekey,boolean_value):
+    match = re.search(r'\$'+replacekey+'\?(.*):(.*)\$', inline)
+    if match:
+        idx = 1
+        if not boolean_value:
+            idx = 2
+        return re.sub(r'\$'+replacekey+'.*\$', match.group(idx), inline)
+    else:
+        return inline
+
+def strftime_process(inline,replacekey,date_value):
+    match = re.search(r'\$'+replacekey+'=(.*)\$', inline)
+    if match:        
+        datestr = strftime(match.group(1), date_value)
+        return re.sub(r'\$'+replacekey+'=.*\$', datestr, inline)
+    else:
+        return inline
+
+
 
 def process(inFile, outFile, info, opts):
 
@@ -87,23 +149,27 @@ def process(inFile, outFile, info, opts):
     for line in fin:
         tmp = re.sub(r'\$WCDATE\$', str(info['wcdate']), line)
         tmp = re.sub(r'\$WCNOW\$', str(info['wcnow']), tmp)
+        tmp = re.sub(r'\$WCDATEUTC\$', str(info['wcdateutc']), tmp)
+        tmp = re.sub(r'\$WCNOWUTC\$', str(info['wcnowutc']), tmp)
         tmp = re.sub(r'\$WCRANGE\$', str(info['wcrange']), tmp)
         tmp = re.sub(r'\$WCREV\$', str(info['wcrev']), tmp)
-        tmp = re.sub(r'\$WCURL\$', str(info['wcurl']), tmp)
+        tmp = re.sub(r'\$WCURL\$', str(info['wcurl']), tmp)        
+        tmp = re.sub(r'\$WCLOCKDATE\$', str(info['wclockdate']), tmp)
+        tmp = re.sub(r'\$WCLOCKDATEUTC\$', str(info['wclockdateutc']), tmp) 
+        tmp = re.sub(r'\$WCLOCKOWNER\$', str(info['wclockowner']), tmp)
+        tmp = re.sub(r'\$WCLOCKCOMMENT\$', str(info['wclockcomment']), tmp)
 
-        match = re.search(r'\$WCMODS\?(.*):(.*)\$', tmp)
-        if match:
-            idx = 1
-            if not info['wcmods']:
-                idx = 2
-            tmp = re.sub(r'\$WCMODS.*\$', match.group(idx), tmp)
+        tmp = boolean_process(tmp,"WCMODS",info['wcmods'])
+        tmp = boolean_process(tmp,"WCMIXED",info['wcmixed'])
+        tmp = boolean_process(tmp,"WCINSVN",info['wcinsvn'])
+        tmp = boolean_process(tmp,"WCNEEDSLOCK",info['wcneedslock'])
+        tmp = boolean_process(tmp,"WCISLOCKED",info['wcislocked'])
 
-        match = re.search(r'\$WCMIXED\?(.*):(.*)\$', tmp)
-        if match:
-            idx = 1
-            if not info['wcmixed']:
-                idx = 2
-            tmp = re.sub(r'\$WCMIXED.*\$', match.group(idx), tmp)
+        tmp = strftime_process(tmp,"WCDATE",localtime(info['_wcmaxdate']))
+        tmp = strftime_process(tmp,"WCDATEUTC",gmtime(info['_wcmaxdate']))
+
+        tmp = strftime_process(tmp,"WCLOCKDATE",localtime(info['_wclockdate']))
+        tmp = strftime_process(tmp,"WCLOCKDATEUTC",gmtime(info['_wclockdate']))
 
         fout.write(tmp)
 
@@ -121,6 +187,9 @@ if __name__ == "__main__":
         sys.exit(usage)
 
     workingCopyDir = os.path.abspath(sys.argv[1].strip())
+
+    #pysvn issue: http://tigris-scm.10930.n7.nabble.com/Bug-with-status-on-a-file-if-path-uses-as-separator-td78156.html
+    workingCopyDir = workingCopyDir.replace("\\","/")
     
     shouldProcess = False
     destFile = ''
