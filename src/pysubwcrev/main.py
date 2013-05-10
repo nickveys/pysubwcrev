@@ -23,14 +23,18 @@ def gather(workingCopyDir, opts):
     if not os.path.exists(workingCopyDir):
         sys.exit("Working copy directory does not exist");
 
+    isSingleFile = os.path.isfile(workingCopyDir)
+
     client = pysvn.Client()
-    #print client.info(workingCopyDir).url
+    svnEntry  = client.info(workingCopyDir)
 
     maxdate = 0
     maxrev = 0
     minrev = 0
     hasMods = False
     inSvn = True
+    needslock = False
+    filerev = -1
 
     # ignore externals if e isn't a given option
     ignoreExt = 'e' not in opts
@@ -54,6 +58,19 @@ def gather(workingCopyDir, opts):
                 if stat.text_status == pysvn.wc_status_kind.modified or \
                     stat.prop_status == pysvn.wc_status_kind.modified:
                     hasMods = True
+
+                if isSingleFile:
+                    prop_list = client.proplist(stat.entry.url)
+                    if len(prop_list) > 0 and len(prop_list[0]) > 1 and prop_list[0][1].has_key("svn:needs-lock"):
+                        needslock = True
+
+                    #TODO: I am not very sure about the different between entry revision and file revisions
+                    #This code get same result with SubWCRev.exe in my test
+                    #No api to get 'current' file revision, just the 1st one lower then current entry revision
+                    logs = client.log(stat.entry.url,revision_start=pysvn.Revision( pysvn.opt_revision_kind.number, minrev),limit=1)
+                    if len(logs) > 0:
+                        filerev = logs[0].revision.number
+
     except pysvn.ClientError:
         inSvn = False
 
@@ -64,20 +81,19 @@ def gather(workingCopyDir, opts):
         wcrange = "%s" % (maxrev)
         isMixed = False
 
-    svnEntry  = client.info(workingCopyDir)
-
     results = {
         '_maxdate': maxdate,
         'wcrange' : wcrange,
         'wcmixed' : isMixed,
         'wcmods'  : hasMods,
-        'wcrev'   : maxrev,
+        'wcrev'   : filerev if filerev>0 else maxrev,
         'wcurl'   : "" if svnEntry == None else svnEntry.url,
         'wcdate'  : strftime("%Y/%m/%d %H:%M:%S", localtime(maxdate)),
         'wcnow'   : strftime("%Y/%m/%d %H:%M:%S", localtime()),
         'wcdateutc'  : strftime("%Y/%m/%d %H:%M:%S", gmtime(maxdate)),
         'wcnowutc'   : strftime("%Y/%m/%d %H:%M:%S", gmtime()),
-        'wcinsvn'   : inSvn,
+        'wcinsvn'    : inSvn,
+        'wcneeslock' : needslock,
     }
 
     return results
@@ -129,6 +145,13 @@ def process(inFile, outFile, info, opts):
         if match:
             datestr = strftime(match.group(1), gmtime(info['_maxdate']))
             tmp = re.sub(r'\$WCDATEUTC=.*\$', datestr, tmp)
+
+        match = re.search(r'\$WCNEEDSLOCK\?(.*):(.*)\$', tmp)
+        if match:
+            idx = 1
+            if not info['wcneeslock']:
+                idx = 2
+            tmp = re.sub(r'\$WCNEEDSLOCK.*\$', match.group(idx), tmp)
 
         fout.write(tmp)
 

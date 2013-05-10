@@ -1,24 +1,24 @@
 // Test file for SubWCRev
 
-char *Revision      = "2774";
+char *Revision      = "2777";
 char *Revision16    = "$WCREV&0xFF$";
 char *Revisionp100  = "$WCREV+100$";
 char *Revisionm100  = "$WCREV-100$";
-char *Modified      = "Not modified";
+char *Modified      = "Modified";
 char *Unversioned   = "$WCUNVER?Unversioned items found:no unversioned items$";
-char *Date          = "2012/05/14 19:23:48";
-char *CustDate      = "Mon, 14 May 2012";
-char *DateUTC       = "2012/05/14 11:23:48";
-char *CustDateUTC   = "Mon, 14 May 2012";
-char *TimeNow       = "2013/05/10 15:59:56";
-char *TimeNowUTC    = "2013/05/10 07:59:56";
-char *RevRange      = "2774";
+char *Date          = "2013/05/10 16:10:14";
+char *CustDate      = "Fri, 10 May 2013";
+char *DateUTC       = "2013/05/10 08:10:14";
+char *CustDateUTC   = "Fri, 10 May 2013";
+char *TimeNow       = "2013/05/10 19:04:45";
+char *TimeNowUTC    = "2013/05/10 11:04:45";
+char *RevRange      = "2777";
 char *Mixed         = "Not mixed";
 char *ExtAllFixed   = "$WCEXTALLFIXED?All externals fixed:Not all externals fixed$";
 char *IsTagged      = "$WCISTAGGED?Tagged:Not tagged$";
-char *URL           = "svn://optscm/matrix/trunk/apps/unitTest/jni/Tools/readme.txt";
+char *URL           = "svn://optscm/matrix/trunk/apps/unitTest/jni/Tools";
 char *isInSVN       = "versioned";
-char *needslck      = "$WCNEEDSLOCK?TRUE:FALSE$";
+char *needslck      = "FALSE";
 char *islocked      = "$WCISLOCKED?locked:not locked$";
 char *lockdateutc   = "$WCLOCKDATEUTC$";
 char *lockdate      = "$WCLOCKDATE$";
@@ -27,7 +27,7 @@ char *lockcust      = "$WCLOCKDATE=%a, %d %B %Y$";
 char *lockown       = "$WCLOCKOWNER$";
 char *lockcmt       = "$WCLOCKCOMMENT$";
 
-#if 0
+#if 1
 #error Source is modified
 #endif
 
