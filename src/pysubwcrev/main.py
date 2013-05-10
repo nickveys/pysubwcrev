@@ -118,6 +118,26 @@ def gather(workingCopyDir, opts):
 
     return results
 
+def boolean_process(inline,replacekey,boolean_value):
+    match = re.search(r'\$'+replacekey+'\?(.*):(.*)\$', inline)
+    if match:
+        idx = 1
+        if not boolean_value:
+            idx = 2
+        return re.sub(r'\$'+replacekey+'.*\$', match.group(idx), inline)
+    else:
+        return inline
+
+def strftime_process(inline,replacekey,date_value):
+    match = re.search(r'\$'+replacekey+'=(.*)\$', inline)
+    if match:        
+        datestr = strftime(match.group(1), date_value)
+        return re.sub(r'\$'+replacekey+'=.*\$', datestr, inline)
+    else:
+        return inline
+
+
+
 def process(inFile, outFile, info, opts):
 
     # if wanted, exit if the out file exists
@@ -139,60 +159,17 @@ def process(inFile, outFile, info, opts):
         tmp = re.sub(r'\$WCLOCKOWNER\$', str(info['wclockowner']), tmp)
         tmp = re.sub(r'\$WCLOCKCOMMENT\$', str(info['wclockcomment']), tmp)
 
-        match = re.search(r'\$WCMODS\?(.*):(.*)\$', tmp)
-        if match:
-            idx = 1
-            if not info['wcmods']:
-                idx = 2
-            tmp = re.sub(r'\$WCMODS.*\$', match.group(idx), tmp)
+        tmp = boolean_process(tmp,"WCMODS",info['wcmods'])
+        tmp = boolean_process(tmp,"WCMIXED",info['wcmixed'])
+        tmp = boolean_process(tmp,"WCINSVN",info['wcinsvn'])
+        tmp = boolean_process(tmp,"WCNEEDSLOCK",info['wcneedslock'])
+        tmp = boolean_process(tmp,"WCISLOCKED",info['wcislocked'])
 
-        match = re.search(r'\$WCMIXED\?(.*):(.*)\$', tmp)
-        if match:
-            idx = 1
-            if not info['wcmixed']:
-                idx = 2
-            tmp = re.sub(r'\$WCMIXED.*\$', match.group(idx), tmp)
+        tmp = strftime_process(tmp,"WCDATE",localtime(info['_wcmaxdate']))
+        tmp = strftime_process(tmp,"WCDATEUTC",gmtime(info['_wcmaxdate']))
 
-        match = re.search(r'\$WCINSVN\?(.*):(.*)\$', tmp)
-        if match:
-            idx = 1
-            if not info['wcinsvn']:
-                idx = 2
-            tmp = re.sub(r'\$WCINSVN.*\$', match.group(idx), tmp)
-
-        match = re.search(r'\$WCDATE=(.*)\$', tmp)
-        if match:
-            datestr = strftime(match.group(1), localtime(info['_wcmaxdate']))
-            tmp = re.sub(r'\$WCDATE=.*\$', datestr, tmp)
-
-        match = re.search(r'\$WCDATEUTC=(.*)\$', tmp)
-        if match:
-            datestr = strftime(match.group(1), gmtime(info['_wcmaxdate']))
-            tmp = re.sub(r'\$WCDATEUTC=.*\$', datestr, tmp)
-
-        match = re.search(r'\$WCNEEDSLOCK\?(.*):(.*)\$', tmp)
-        if match:
-            idx = 1
-            if not info['wcneedslock']:
-                idx = 2
-            tmp = re.sub(r'\$WCNEEDSLOCK.*\$', match.group(idx), tmp)
-
-        match = re.search(r'\$WCISLOCKED\?(.*):(.*)\$', tmp)
-        if match:
-            idx = 1
-            if not info['wcislocked']:
-                idx = 2
-            tmp = re.sub(r'\$WCISLOCKED.*\$', match.group(idx), tmp)
-
-        match = re.search(r'\$WCLOCKDATE=(.*)\$', tmp)
-        if match:
-            datestr = strftime(match.group(1), localtime(info['_wclockdate']))
-            tmp = re.sub(r'\$WCLOCKDATE=.*\$', datestr, tmp)
-
-        match = re.search(r'\$WCLOCKDATEUTC=(.*)\$', tmp)
-        if match:
-            datestr = strftime(match.group(1), gmtime(info['_wclockdate']))
-            tmp = re.sub(r'\$WCLOCKDATEUTC=.*\$', datestr, tmp)
+        tmp = strftime_process(tmp,"WCLOCKDATE",localtime(info['_wclockdate']))
+        tmp = strftime_process(tmp,"WCLOCKDATEUTC",gmtime(info['_wclockdate']))
 
         fout.write(tmp)
 
