@@ -71,7 +71,9 @@ def gather(workingCopyDir, opts):
         'wcrev'   : maxrev,
         'wcurl'   : client.info(workingCopyDir).url,
         'wcdate'  : strftime("%Y/%m/%d %H:%M:%S", localtime(maxdate)),
-        'wcnow'   : strftime("%Y/%m/%d %H:%M:%S", localtime())
+        'wcnow'   : strftime("%Y/%m/%d %H:%M:%S", localtime()),
+        'wcdateutc'  : strftime("%Y/%m/%d %H:%M:%S", gmtime(maxdate)),
+        'wcnowutc'   : strftime("%Y/%m/%d %H:%M:%S", gmtime()),
     }
 
     return results
@@ -87,6 +89,8 @@ def process(inFile, outFile, info, opts):
     for line in fin:
         tmp = re.sub(r'\$WCDATE\$', str(info['wcdate']), line)
         tmp = re.sub(r'\$WCNOW\$', str(info['wcnow']), tmp)
+        tmp = re.sub(r'\$WCDATEUTC\$', str(info['wcdateutc']), tmp)
+        tmp = re.sub(r'\$WCNOWUTC\$', str(info['wcnowutc']), tmp)
         tmp = re.sub(r'\$WCRANGE\$', str(info['wcrange']), tmp)
         tmp = re.sub(r'\$WCREV\$', str(info['wcrev']), tmp)
         tmp = re.sub(r'\$WCURL\$', str(info['wcurl']), tmp)
