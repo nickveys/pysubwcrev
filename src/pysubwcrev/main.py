@@ -64,12 +64,15 @@ def gather(workingCopyDir, opts):
         wcrange = "%s" % (maxrev)
         isMixed = False
 
+    svnInfo = client.info(workingCopyDir)
+
     results = {
+        '_maxdate': maxdate,
         'wcrange' : wcrange,
         'wcmixed' : isMixed,
         'wcmods'  : hasMods,
         'wcrev'   : maxrev,
-        'wcurl'   : "" if True else client.info(workingCopyDir).url,
+        'wcurl'   : "" if svnInfo == None else svnInfo.url,
         'wcdate'  : strftime("%Y/%m/%d %H:%M:%S", localtime(maxdate)),
         'wcnow'   : strftime("%Y/%m/%d %H:%M:%S", localtime()),
         'wcdateutc'  : strftime("%Y/%m/%d %H:%M:%S", gmtime(maxdate)),
@@ -116,6 +119,16 @@ def process(inFile, outFile, info, opts):
             if not info['wcinsvn']:
                 idx = 2
             tmp = re.sub(r'\$WCINSVN.*\$', match.group(idx), tmp)
+
+        match = re.search(r'\$WCDATE=(.*)\$', tmp)
+        if match:
+            datestr = strftime(match.group(1), localtime(info['_maxdate']))
+            tmp = re.sub(r'\$WCDATE=.*\$', datestr, tmp)
+
+        match = re.search(r'\$WCDATEUTC=(.*)\$', tmp)
+        if match:
+            datestr = strftime(match.group(1), gmtime(info['_maxdate']))
+            tmp = re.sub(r'\$WCDATEUTC=.*\$', datestr, tmp)
 
         fout.write(tmp)
 
