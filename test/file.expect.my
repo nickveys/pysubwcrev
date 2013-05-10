@@ -1,0 +1,34 @@
+// Test file for SubWCRev
+
+char *Revision      = "2764";
+char *Revision16    = "$WCREV&0xFF$";
+char *Revisionp100  = "$WCREV+100$";
+char *Revisionm100  = "$WCREV-100$";
+char *Modified      = "Modified";
+char *Unversioned   = "$WCUNVER?Unversioned items found:no unversioned items$";
+char *Date          = "2013/05/09 19:23:14";
+char *CustDate      = "$WCDATE=%a, %d %B %Y$";
+char *DateUTC       = "$WCDATEUTC$";
+char *CustDateUTC   = "$WCDATEUTC=%a, %d %B %Y$";
+char *TimeNow       = "2013/05/10 13:25:59";
+char *TimeNowUTC    = "$WCNOWUTC$";
+char *RevRange      = "2688:2764";
+char *Mixed         = "Mixed revision WC";
+char *ExtAllFixed   = "$WCEXTALLFIXED?All externals fixed:Not all externals fixed$";
+char *IsTagged      = "$WCISTAGGED?Tagged:Not tagged$";
+char *URL           = "svn://optscm/matrix/trunk";
+char *isInSVN       = "$WCINSVN?versioned:not versioned$";
+char *needslck      = "$WCNEEDSLOCK?TRUE:FALSE$";
+char *islocked      = "$WCISLOCKED?locked:not locked$";
+char *lockdateutc   = "$WCLOCKDATEUTC$";
+char *lockdate      = "$WCLOCKDATE$";
+char *lockcustutc   = "$WCLOCKDATEUTC=%a, %d %B %Y$";
+char *lockcust      = "$WCLOCKDATE=%a, %d %B %Y$";
+char *lockown       = "$WCLOCKOWNER$";
+char *lockcmt       = "$WCLOCKCOMMENT$";
+
+#if 1
+#error Source is modified
+#endif
+
+// End of file

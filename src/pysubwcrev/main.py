@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with pysubwcrev.  If not, see <http://www.gnu.org/licenses/>.
 
-from time import strftime, gmtime
+from time import strftime, gmtime, localtime
 import os, pysvn, re, sys
 
 def gather(workingCopyDir, opts):
@@ -70,8 +70,8 @@ def gather(workingCopyDir, opts):
         'wcmods'  : hasMods,
         'wcrev'   : maxrev,
         'wcurl'   : client.info(workingCopyDir).url,
-        'wcdate'  : strftime("%Y-%m-%d %H:%M:%S", gmtime(maxdate)),
-        'wcnow'   : strftime("%Y-%m-%d %H:%M:%S", gmtime())
+        'wcdate'  : strftime("%Y/%m/%d %H:%M:%S", localtime(maxdate)),
+        'wcnow'   : strftime("%Y/%m/%d %H:%M:%S", localtime())
     }
 
     return results
