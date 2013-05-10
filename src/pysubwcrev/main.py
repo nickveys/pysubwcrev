@@ -30,6 +30,7 @@ def gather(workingCopyDir, opts):
     maxrev = 0
     minrev = 0
     hasMods = False
+    inSvn = True
 
     # ignore externals if e isn't a given option
     ignoreExt = 'e' not in opts
@@ -54,8 +55,7 @@ def gather(workingCopyDir, opts):
                     stat.prop_status == pysvn.wc_status_kind.modified:
                     hasMods = True
     except pysvn.ClientError:
-        print "Working copy directory is not a svn directory"
-        sys.exit(1)
+        inSvn = False
 
     # assume mixed, w/range, fix if needed
     wcrange = "%s:%s" % (minrev, maxrev)
@@ -69,11 +69,12 @@ def gather(workingCopyDir, opts):
         'wcmixed' : isMixed,
         'wcmods'  : hasMods,
         'wcrev'   : maxrev,
-        'wcurl'   : client.info(workingCopyDir).url,
+        'wcurl'   : "" if True else client.info(workingCopyDir).url,
         'wcdate'  : strftime("%Y/%m/%d %H:%M:%S", localtime(maxdate)),
         'wcnow'   : strftime("%Y/%m/%d %H:%M:%S", localtime()),
         'wcdateutc'  : strftime("%Y/%m/%d %H:%M:%S", gmtime(maxdate)),
         'wcnowutc'   : strftime("%Y/%m/%d %H:%M:%S", gmtime()),
+        'wcinsvn'   : inSvn,
     }
 
     return results
@@ -108,6 +109,13 @@ def process(inFile, outFile, info, opts):
             if not info['wcmixed']:
                 idx = 2
             tmp = re.sub(r'\$WCMIXED.*\$', match.group(idx), tmp)
+
+        match = re.search(r'\$WCINSVN\?(.*):(.*)\$', tmp)
+        if match:
+            idx = 1
+            if not info['wcinsvn']:
+                idx = 2
+            tmp = re.sub(r'\$WCINSVN.*\$', match.group(idx), tmp)
 
         fout.write(tmp)
 

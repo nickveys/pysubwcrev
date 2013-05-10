@@ -1,23 +1,23 @@
 // Test file for SubWCRev
 
-char *Revision      = "2764";
+char *Revision      = "0";
 char *Revision16    = "$WCREV&0xFF$";
 char *Revisionp100  = "$WCREV+100$";
 char *Revisionm100  = "$WCREV-100$";
-char *Modified      = "Modified";
+char *Modified      = "Not modified";
 char *Unversioned   = "$WCUNVER?Unversioned items found:no unversioned items$";
-char *Date          = "2013/05/09 19:23:14";
+char *Date          = "1970/01/01 08:00:00";
 char *CustDate      = "$WCDATE=%a, %d %B %Y$";
-char *DateUTC       = "2013/05/09 11:23:14";
+char *DateUTC       = "1970/01/01 00:00:00";
 char *CustDateUTC   = "$WCDATEUTC=%a, %d %B %Y$";
-char *TimeNow       = "2013/05/10 13:33:17";
-char *TimeNowUTC    = "2013/05/10 05:33:17";
-char *RevRange      = "2688:2764";
-char *Mixed         = "Mixed revision WC";
+char *TimeNow       = "2013/05/10 13:46:04";
+char *TimeNowUTC    = "2013/05/10 05:46:04";
+char *RevRange      = "0";
+char *Mixed         = "Not mixed";
 char *ExtAllFixed   = "$WCEXTALLFIXED?All externals fixed:Not all externals fixed$";
 char *IsTagged      = "$WCISTAGGED?Tagged:Not tagged$";
-char *URL           = "svn://optscm/matrix/trunk";
-char *isInSVN       = "$WCINSVN?versioned:not versioned$";
+char *URL           = "";
+char *isInSVN       = "versioned";
 char *needslck      = "$WCNEEDSLOCK?TRUE:FALSE$";
 char *islocked      = "$WCISLOCKED?locked:not locked$";
 char *lockdateutc   = "$WCLOCKDATEUTC$";
@@ -27,7 +27,7 @@ char *lockcust      = "$WCLOCKDATE=%a, %d %B %Y$";
 char *lockown       = "$WCLOCKOWNER$";
 char *lockcmt       = "$WCLOCKCOMMENT$";
 
-#if 1
+#if 0
 #error Source is modified
 #endif
 
