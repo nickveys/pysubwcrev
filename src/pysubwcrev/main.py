@@ -35,6 +35,10 @@ def gather(workingCopyDir, opts):
     inSvn = True
     needslock = False
     filerev = -1
+    islocked = False
+    lockeddata = 0
+    lockowner = ""
+    lockcomment = ""
 
     # ignore externals if e isn't a given option
     ignoreExt = 'e' not in opts
@@ -71,6 +75,16 @@ def gather(workingCopyDir, opts):
                     if len(logs) > 0:
                         filerev = logs[0].revision.number
 
+                    entry_list = client.info2(stat.entry.url)
+                    if len(entry_list) > 0 \
+                            and len(entry_list[0]) > 1 \
+                            and entry_list[0][1].has_key("lock") \
+                            and entry_list[0][1].lock != None:                            
+                        islocked = True
+                        lockeddata = entry_list[0][1].lock.creation_date
+                        lockowner = entry_list[0][1].lock.owner
+                        lockcomment = entry_list[0][1].lock.comment
+
     except pysvn.ClientError:
         inSvn = False
 
@@ -82,7 +96,7 @@ def gather(workingCopyDir, opts):
         isMixed = False
 
     results = {
-        '_maxdate': maxdate,
+        '_wcmaxdate': maxdate,
         'wcrange' : wcrange,
         'wcmixed' : isMixed,
         'wcmods'  : hasMods,
@@ -90,10 +104,16 @@ def gather(workingCopyDir, opts):
         'wcurl'   : "" if svnEntry == None else svnEntry.url,
         'wcdate'  : strftime("%Y/%m/%d %H:%M:%S", localtime(maxdate)),
         'wcnow'   : strftime("%Y/%m/%d %H:%M:%S", localtime()),
-        'wcdateutc'  : strftime("%Y/%m/%d %H:%M:%S", gmtime(maxdate)),
-        'wcnowutc'   : strftime("%Y/%m/%d %H:%M:%S", gmtime()),
-        'wcinsvn'    : inSvn,
-        'wcneeslock' : needslock,
+        'wcdateutc'     : strftime("%Y/%m/%d %H:%M:%S", gmtime(maxdate)),
+        'wcnowutc'      : strftime("%Y/%m/%d %H:%M:%S", gmtime()),
+        'wcinsvn'       : inSvn,
+        'wcneedslock'   : needslock,
+        '_wclockdate'   : lockeddata,
+        'wcislocked'    : islocked,
+        'wclockdate'    : strftime("%Y/%m/%d %H:%M:%S", localtime(lockeddata)),
+        'wclockdateutc' : strftime("%Y/%m/%d %H:%M:%S", gmtime(lockeddata)),
+        'wclockowner'   : lockowner,
+        'wclockcomment' : lockcomment,
     }
 
     return results
@@ -113,7 +133,11 @@ def process(inFile, outFile, info, opts):
         tmp = re.sub(r'\$WCNOWUTC\$', str(info['wcnowutc']), tmp)
         tmp = re.sub(r'\$WCRANGE\$', str(info['wcrange']), tmp)
         tmp = re.sub(r'\$WCREV\$', str(info['wcrev']), tmp)
-        tmp = re.sub(r'\$WCURL\$', str(info['wcurl']), tmp)
+        tmp = re.sub(r'\$WCURL\$', str(info['wcurl']), tmp)        
+        tmp = re.sub(r'\$WCLOCKDATE\$', str(info['wclockdate']), tmp)
+        tmp = re.sub(r'\$WCLOCKDATEUTC\$', str(info['wclockdateutc']), tmp) 
+        tmp = re.sub(r'\$WCLOCKOWNER\$', str(info['wclockowner']), tmp)
+        tmp = re.sub(r'\$WCLOCKCOMMENT\$', str(info['wclockcomment']), tmp)
 
         match = re.search(r'\$WCMODS\?(.*):(.*)\$', tmp)
         if match:
@@ -138,20 +162,37 @@ def process(inFile, outFile, info, opts):
 
         match = re.search(r'\$WCDATE=(.*)\$', tmp)
         if match:
-            datestr = strftime(match.group(1), localtime(info['_maxdate']))
+            datestr = strftime(match.group(1), localtime(info['_wcmaxdate']))
             tmp = re.sub(r'\$WCDATE=.*\$', datestr, tmp)
 
         match = re.search(r'\$WCDATEUTC=(.*)\$', tmp)
         if match:
-            datestr = strftime(match.group(1), gmtime(info['_maxdate']))
+            datestr = strftime(match.group(1), gmtime(info['_wcmaxdate']))
             tmp = re.sub(r'\$WCDATEUTC=.*\$', datestr, tmp)
 
         match = re.search(r'\$WCNEEDSLOCK\?(.*):(.*)\$', tmp)
         if match:
             idx = 1
-            if not info['wcneeslock']:
+            if not info['wcneedslock']:
                 idx = 2
             tmp = re.sub(r'\$WCNEEDSLOCK.*\$', match.group(idx), tmp)
+
+        match = re.search(r'\$WCISLOCKED\?(.*):(.*)\$', tmp)
+        if match:
+            idx = 1
+            if not info['wcislocked']:
+                idx = 2
+            tmp = re.sub(r'\$WCISLOCKED.*\$', match.group(idx), tmp)
+
+        match = re.search(r'\$WCLOCKDATE=(.*)\$', tmp)
+        if match:
+            datestr = strftime(match.group(1), localtime(info['_wclockdate']))
+            tmp = re.sub(r'\$WCLOCKDATE=.*\$', datestr, tmp)
+
+        match = re.search(r'\$WCLOCKDATEUTC=(.*)\$', tmp)
+        if match:
+            datestr = strftime(match.group(1), gmtime(info['_wclockdate']))
+            tmp = re.sub(r'\$WCLOCKDATEUTC=.*\$', datestr, tmp)
 
         fout.write(tmp)
 

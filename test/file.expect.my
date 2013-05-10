@@ -10,8 +10,8 @@ char *Date          = "2013/05/10 16:10:14";
 char *CustDate      = "Fri, 10 May 2013";
 char *DateUTC       = "2013/05/10 08:10:14";
 char *CustDateUTC   = "Fri, 10 May 2013";
-char *TimeNow       = "2013/05/10 19:04:45";
-char *TimeNowUTC    = "2013/05/10 11:04:45";
+char *TimeNow       = "2013/05/10 19:32:41";
+char *TimeNowUTC    = "2013/05/10 11:32:41";
 char *RevRange      = "2777";
 char *Mixed         = "Not mixed";
 char *ExtAllFixed   = "$WCEXTALLFIXED?All externals fixed:Not all externals fixed$";
@@ -19,13 +19,13 @@ char *IsTagged      = "$WCISTAGGED?Tagged:Not tagged$";
 char *URL           = "svn://optscm/matrix/trunk/apps/unitTest/jni/Tools";
 char *isInSVN       = "versioned";
 char *needslck      = "FALSE";
-char *islocked      = "$WCISLOCKED?locked:not locked$";
-char *lockdateutc   = "$WCLOCKDATEUTC$";
-char *lockdate      = "$WCLOCKDATE$";
-char *lockcustutc   = "$WCLOCKDATEUTC=%a, %d %B %Y$";
-char *lockcust      = "$WCLOCKDATE=%a, %d %B %Y$";
-char *lockown       = "$WCLOCKOWNER$";
-char *lockcmt       = "$WCLOCKCOMMENT$";
+char *islocked      = "not locked";
+char *lockdateutc   = "1970/01/01 00:00:00";
+char *lockdate      = "1970/01/01 08:00:00";
+char *lockcustutc   = "Thu, 01 January 1970";
+char *lockcust      = "Thu, 01 January 1970";
+char *lockown       = "";
+char *lockcmt       = "";
 
 #if 1
 #error Source is modified
